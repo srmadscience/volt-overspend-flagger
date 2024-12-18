@@ -177,6 +177,11 @@ public class SimulateOverspends {
 
             if (cr.getResults()[0].advanceRow()) {
                 campaignCount = (int) cr.getResults()[0].getLong("max_id");
+                
+                if (cr.getResults()[0].wasNull()) {
+                    campaignCount = 0;
+                }
+                
                 msg("found " + campaignCount + " campaigns");
             }
 
