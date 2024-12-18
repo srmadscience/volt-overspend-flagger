@@ -239,7 +239,7 @@ public class SimulateOverspends {
         msg("Created " + entriesPerMs + " campaigns per ms...");
     }
     protected static void runOverspendBenchmark(int campaignCount, int tpMs, Client mainClient, int durationSeconds,
-            int globalQueryFreqSeconds) throws InterruptedException, IOException, NoConnectionsException {
+            int globalQueryFreqSeconds) throws InterruptedException, IOException, NoConnectionsException, ProcCallException {
 
         msg("runOverspendBenchmark for " + durationSeconds + " seconds...");
 
@@ -277,6 +277,7 @@ public class SimulateOverspends {
 
             if (eventCount++ % 100000 == 1) {
                 msg("Reported " + eventCount + " spending events...");
+                showOverspends(mainClient);
             }
 
         }
@@ -290,11 +291,21 @@ public class SimulateOverspends {
 
         final double entriesPerMs = (campaignCount) / (System.currentTimeMillis() - startMsBenchmark);
         msg("Proceseed " + entriesPerMs + " events per ms...");
+        showOverspends(mainClient);
         
         reportRunLatencyStats(tpMs, entriesPerMs);
     }
 
   
+
+    private static void showOverspends(Client mainClient) throws NoConnectionsException, IOException, ProcCallException {
+        ClientResponse cr = mainClient.callProcedure("@AdHoc",
+               "select count(*) how_many from campaign_overspends where spend > budget;");
+        
+        msg("Campaigns that have spent too much:");
+        msg(cr.getResults()[0].toFormattedString());
+        
+    }
 
     /**
      * Turn latency stats into a grepable string
