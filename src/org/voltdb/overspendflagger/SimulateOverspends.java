@@ -307,7 +307,7 @@ public class SimulateOverspends {
         summary.append(':');
         summary.append(System.lineSeparator());
 
-        summary.append("Numbers are in Microseconds - divide by 1000 to get milliseconds...");
+        summary.append("Percentiles are in Microseconds - divide by 1000 to get milliseconds...");
         summary.append(System.lineSeparator());
 
         
