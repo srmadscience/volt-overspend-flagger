@@ -4,5 +4,6 @@ DROP VIEW  campaign_spends IF EXISTS;
 DROP STREAM campaign_bids IF EXISTS;
 DROP TABLE campaigns IF EXISTS;
 DROP TABLE campaign_overspends IF EXISTS;
+DROP TABLE campaign_ads_object IF EXISTS;
 
 

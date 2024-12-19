@@ -24,7 +24,6 @@ package org.voltdb.overspendflagger;
  */
 
 import java.io.IOException;
-
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
@@ -38,7 +37,6 @@ import org.voltdb.client.NoConnectionsException;
 import org.voltdb.client.ProcCallException;
 import org.voltdb.voltutil.stats.SafeHistogramCache;
 
-
 /**
  * This is an abstract class that contains the actual logic of the demo code.
  */
@@ -48,6 +46,7 @@ public class SimulateOverspends {
 
     public static final String DELETE_CAMPAIGN = "DELETE_CAMPAIGN";
     public static final String CREATE_CAMPAIGN = "CREATE_CAMPAIGN";
+    public static final String CREATE_CAMPAIGN_ADS = "CREATE_CAMPAIGN_ADS";
     public static final String RUN_CAMPAIGN = "RUN_CAMPAIGN";
 
     public static SafeHistogramCache shc = SafeHistogramCache.getInstance();
@@ -110,7 +109,6 @@ public class SimulateOverspends {
 
     }
 
-    
     protected static void deleteOldCampaigns(int tpMs, Client mainClient)
             throws InterruptedException, IOException, NoConnectionsException, ProcCallException {
 
@@ -142,14 +140,14 @@ public class SimulateOverspends {
 
             // Put a request to delete a user into the queue.
             TimeTrackingCallback theCallback = new TimeTrackingCallback(shc, DELETE_CAMPAIGN);
-                        mainClient.callProcedure(theCallback, "delete_campaigns", i, i);
+            mainClient.callProcedure(theCallback, "delete_campaigns", i, i, i);
 
             if (i % 100000 == 1) {
                 msg("Deleted " + i + " campaigns...");
             }
 
         }
-        
+
         msg("Deleted " + campaignCount + " campaigns...");
 
         // Because we've put messages into the clients queue we
@@ -177,11 +175,11 @@ public class SimulateOverspends {
 
             if (cr.getResults()[0].advanceRow()) {
                 campaignCount = (int) cr.getResults()[0].getLong("max_id");
-                
+
                 if (cr.getResults()[0].wasNull()) {
                     campaignCount = 0;
                 }
-                
+
                 msg("found " + campaignCount + " campaigns");
             }
 
@@ -192,7 +190,7 @@ public class SimulateOverspends {
         return campaignCount;
     }
 
-    protected static void createNewCampaigns(int campaignCount, int tpMs, Client mainClient, int budget)
+    protected static void createNewCampaigns(int campaignCount, int tpMs, Client mainClient, int budget, int adCount)
             throws InterruptedException, IOException, NoConnectionsException {
 
         msg("Creating new campaigns...");
@@ -224,6 +222,11 @@ public class SimulateOverspends {
             TimeTrackingCallback theCallback = new TimeTrackingCallback(shc, CREATE_CAMPAIGN);
             mainClient.callProcedure(theCallback, "campaigns.INSERT", i, r.nextInt(budget));
 
+            for (int j = 0; j < adCount; j++) {
+                theCallback = new TimeTrackingCallback(shc, CREATE_CAMPAIGN_ADS);
+                mainClient.callProcedure(theCallback, "campaign_ads_object.INSERT", i, j);
+            }
+
             if (i % 100000 == 1) {
                 msg("Created " + i + " campaigns...");
             }
@@ -238,14 +241,17 @@ public class SimulateOverspends {
         final long entriesPerMs = (campaignCount) / (System.currentTimeMillis() - startMsDelete);
         msg("Created " + entriesPerMs + " campaigns per ms...");
     }
+
     protected static void runOverspendBenchmark(int campaignCount, int tpMs, Client mainClient, int durationSeconds,
-            int globalQueryFreqSeconds) throws InterruptedException, IOException, NoConnectionsException, ProcCallException {
+            int globalQueryFreqSeconds, int adCount)
+            throws InterruptedException, IOException, NoConnectionsException, ProcCallException {
 
         msg("runOverspendBenchmark for " + durationSeconds + " seconds...");
 
         final long startMsBenchmark = System.currentTimeMillis();
-        final long endMsBenchmark = startMsBenchmark + (1000 * durationSeconds );
+        final long endMsBenchmark = startMsBenchmark + (1000 * durationSeconds);
         long currentMs = System.currentTimeMillis();
+        long nextOverspendReportMs = System.currentTimeMillis() + (1000 * globalQueryFreqSeconds);
         Random r = new Random();
         long eventCount = 0;
 
@@ -271,13 +277,18 @@ public class SimulateOverspends {
             // Put a request to delete a user into the queue.
             TimeTrackingCallback theCallback = new TimeTrackingCallback(shc, RUN_CAMPAIGN);
             int campaignId = r.nextInt(campaignCount);
+            int adId = r.nextInt(adCount);
             int clickCount = r.nextInt(1000);
             int spend = (int) (clickCount * 0.5);
-            mainClient.callProcedure(theCallback, "report_bids", campaignId, clickCount, spend, campaignId);
+            mainClient.callProcedure(theCallback, "report_bids", campaignId, adId, clickCount, spend, campaignId);
 
             if (eventCount++ % 100000 == 1) {
                 msg("Reported " + eventCount + " spending events...");
+            }
+
+            if (System.currentTimeMillis() > nextOverspendReportMs) {
                 showOverspends(mainClient);
+                nextOverspendReportMs = System.currentTimeMillis() + (1000 * globalQueryFreqSeconds);
             }
 
         }
@@ -292,19 +303,18 @@ public class SimulateOverspends {
         final double entriesPerMs = (campaignCount) / (System.currentTimeMillis() - startMsBenchmark);
         msg("Proceseed " + entriesPerMs + " events per ms...");
         showOverspends(mainClient);
-        
+
         reportRunLatencyStats(tpMs, entriesPerMs);
     }
 
-  
-
-    private static void showOverspends(Client mainClient) throws NoConnectionsException, IOException, ProcCallException {
+    private static void showOverspends(Client mainClient)
+            throws NoConnectionsException, IOException, ProcCallException {
         ClientResponse cr = mainClient.callProcedure("@AdHoc",
-               "select count(*) how_many from campaign_overspends where spend > budget;");
-        
+                "select count(*) how_many from campaign_overspends where spend > budget;");
+
         msg("Campaigns that have spent too much:");
         msg(cr.getResults()[0].toFormattedString());
-        
+
     }
 
     /**
@@ -326,20 +336,20 @@ public class SimulateOverspends {
         summary.append("Percentiles are in Microseconds - divide by 1000 to get milliseconds...");
         summary.append(System.lineSeparator());
 
-        
         summary.append(SafeHistogramCache.getInstance().get(DELETE_CAMPAIGN).toStringShort());
         summary.append(System.lineSeparator());
- 
+
         summary.append(SafeHistogramCache.getInstance().get(CREATE_CAMPAIGN).toStringShort());
         summary.append(System.lineSeparator());
- 
+
+        summary.append(SafeHistogramCache.getInstance().get(CREATE_CAMPAIGN_ADS).toStringShort());
+        summary.append(System.lineSeparator());
+
         summary.append(SafeHistogramCache.getInstance().get(RUN_CAMPAIGN).toStringShort());
         summary.append(System.lineSeparator());
- 
-   
+
         msg(summary.toString());
 
-        
     }
 
     /**
@@ -349,36 +359,46 @@ public class SimulateOverspends {
 
         msg("Parameters:" + Arrays.toString(args));
 
-        if (args.length != 6) {
-            msg("Usage: hostnames campaigncount tpms durationseconds queryinterval budget");
+        if (args.length != 7) {
+            msg("Usage: hostnames campaigncount tpms durationseconds queryinterval budget adcount");
             System.exit(1);
         }
 
         // Comma delimited list of hosts...
         String hostlist = args[0];
+        msg("hostlist=" + hostlist);
 
         // How many users
         int campaignCount = Integer.parseInt(args[1]);
+        msg("campaignCount=" + campaignCount);
 
         // Target transactions per millisecond.
         int tpMs = Integer.parseInt(args[2]);
+        msg("tpMs=" + tpMs);
 
         // Runtime for TRANSACTIONS in seconds.
         int durationSeconds = Integer.parseInt(args[3]);
+        msg("durationSeconds=" + durationSeconds);
 
         // How often we do global queries...
         int globalQueryFreqSeconds = Integer.parseInt(args[4]);
+        msg("globalQueryFreqSeconds=" + globalQueryFreqSeconds);
 
         // campaign budget
         int budget = Integer.parseInt(args[5]);
+        msg("budget=" + budget);
+
+        // campaign budget
+        int adCount = Integer.parseInt(args[6]);
+        msg("adCount =" + adCount);
 
         try {
             // A VoltDB Client object maintains multiple connections to all the
             // servers in the cluster.
             Client mainClient = connectVoltDB(hostlist);
             deleteOldCampaigns(tpMs, mainClient);
-            createNewCampaigns(campaignCount, tpMs, mainClient, budget);
-            runOverspendBenchmark(campaignCount, tpMs, mainClient, durationSeconds, globalQueryFreqSeconds);
+            createNewCampaigns(campaignCount, tpMs, mainClient, budget, adCount);
+            runOverspendBenchmark(campaignCount, tpMs, mainClient, durationSeconds, globalQueryFreqSeconds, adCount);
 
             msg("Closing connection...");
             mainClient.close();

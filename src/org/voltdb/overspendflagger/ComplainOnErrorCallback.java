@@ -23,13 +23,12 @@ package org.voltdb.overspendflagger;
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-
 import org.voltdb.client.ClientResponse;
 import org.voltdb.client.ProcedureCallback;
 
 /**
  * Simple callback that complains if something went badly wrong.
- * 
+ *
  * @author drolfe
  *
  */

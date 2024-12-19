@@ -118,7 +118,7 @@ public class LatencyHistogram {
      * reset latency stats to zero. Called at start, on demand, and on rollover.
      */
     public void resetLatency() {
-        
+
         for (int i = 0; i < maxSize; i++) {
             latencyHistogram[i] = 0;
         }

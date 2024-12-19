@@ -9,6 +9,16 @@ CREATE TABLE campaigns
 
 PARTITION TABLE campaigns on COLUMN campaign_id;
 
+CREATE TABLE campaign_ads_object
+(
+    campaign_id INT  NOT NULL,
+    ad_id INT  NOT NULL,
+    primary key (campaign_id,ad_id)
+);
+
+PARTITION TABLE campaign_ads_object on COLUMN campaign_id;
+
+
 -- populated by report_bid if needed...
 CREATE TABLE campaign_overspends
 (
@@ -23,6 +33,7 @@ PARTITION TABLE campaign_overspends on COLUMN campaign_id;
 CREATE STREAM campaign_bids 
 PARTITION ON COLUMN campaign_id
 (campaign_id INT not null
+,ad_id       INT not null
 ,click_count INT not null
 ,spend DECIMAL(10, 2));
 
@@ -40,8 +51,8 @@ BEGIN
 --
 -- Report spending
 --
-INSERT INTO campaign_bids (campaign_id, click_count, spend) VALUES
-    (?,?,?);
+INSERT INTO campaign_bids (campaign_id, ad_id, click_count, spend) VALUES
+    (?,?,?,?);
 --
 -- add row to overspends if justified
 --
@@ -65,13 +76,11 @@ BEGIN
 --
 DELETE FROM campaigns WHERE campaign_id = ?;
 --
+DELETE FROM campaign_ads_object WHERE campaign_id = ?;
+--
 DELETE FROM campaign_overspends WHERE campaign_id = ?;
 --
 END;
 
 
  
-    exec report_bids 1  100  15.00 1;
-    exec report_bids 1  50  75.00 1;
-
-

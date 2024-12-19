@@ -73,7 +73,7 @@ public class SafeHistogramCache {
 
     /**
      * Return a histogram, creating it if needed.
-     * 
+     *
      * @param type
      * @return a LatencyHistogram
      */
@@ -94,7 +94,7 @@ public class SafeHistogramCache {
 
     /**
      * Recreate a histogram, keeping size the same.
-     * 
+     *
      * @param type
      */
     public void clear(String type) {
@@ -137,7 +137,7 @@ public class SafeHistogramCache {
 
     /**
      * Return a counter value
-     * 
+     *
      * @param type
      * @return
      */
@@ -175,7 +175,7 @@ public class SafeHistogramCache {
 
     /**
      * Increment a counter in a Thread Safe way.
-     * 
+     *
      * @param type
      */
     public void incCounter(String type) {
@@ -186,7 +186,7 @@ public class SafeHistogramCache {
 
     /**
      * Increment a counter in a Thread Safe way.
-     * 
+     *
      * @param type
      */
     public void incCounter(String type, int quantity) {
@@ -205,7 +205,7 @@ public class SafeHistogramCache {
 
     /**
      * Report a value, usually latency.
-     * 
+     *
      * @param type
      * @param value
      * @param comment
@@ -227,7 +227,7 @@ public class SafeHistogramCache {
 
     /**
      * Report a size
-     * 
+     *
      * @param type
      * @param size
      * @param comment
@@ -250,7 +250,7 @@ public class SafeHistogramCache {
 
     /**
      * Report a latency, relative to a defined start time.
-     * 
+     *
      * @param type
      * @param start
      * @param comment
@@ -265,7 +265,7 @@ public class SafeHistogramCache {
     /**
      * Report a latency measurement, relative to now. If it's >= maxSize it goes
      * into the last element. Negative values are forced to zero.
-     * 
+     *
      * @param latency
      * @param comment
      * @param howmany
@@ -289,7 +289,7 @@ public class SafeHistogramCache {
     /**
      * Report a latency measurement, relative to now, in microseconds. If it's >=
      * maxSize it goes into the last element. Negative values are forced to zero.
-     * 
+     *
      * @param latency
      * @param comment
      * @param howmany
@@ -303,7 +303,7 @@ public class SafeHistogramCache {
             }
 
             final long now = System.nanoTime() / 1000;
-            
+
             int latency = (int) (now - start);
 
             h.report(latency, comment, count);
@@ -315,7 +315,7 @@ public class SafeHistogramCache {
     /**
      * Report a latency measurement, relative to now, in nanoseconds. If it's >=
      * maxSize it goes into the last element. Negative values are forced to zero.
-     * 
+     *
      * @param latency
      * @param comment
      * @param howmany
@@ -340,7 +340,7 @@ public class SafeHistogramCache {
      * Create a new Histogram by subtracting two existing ones. Note that while the
      * new Histogram exists in the cache, it will not be updated by changes to its
      * parents.
-     * 
+     *
      * @param bigHist
      * @param smallHist
      * @param name
@@ -402,7 +402,7 @@ public class SafeHistogramCache {
 
     /**
      * Return stats every statsInterval ms, otherwise an empty string.
-     * 
+     *
      * @param statsInterval
      * @return
      */
@@ -423,7 +423,7 @@ public class SafeHistogramCache {
 
     /**
      * Create a new Size histogram.
-     * 
+     *
      * @param name
      * @param batchSize
      * @param description
@@ -446,7 +446,7 @@ public class SafeHistogramCache {
 
     /**
      * Create a new Latency Histogram.
-     * 
+     *
      * @param name
      * @param batchSize
      * @param description
@@ -467,7 +467,7 @@ public class SafeHistogramCache {
 
     /**
      * Get import stats as a string
-     * 
+     *
      * @param shc            Histogram Cache
      * @param oneLineSummary StringBuffer we append to - note this is a void
      *                       method....
