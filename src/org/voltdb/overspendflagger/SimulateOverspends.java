@@ -207,17 +207,6 @@ public class SimulateOverspends {
         // So we iterate through all our users...
         for (int i = 0; i <= campaignCount; i++) {
 
-            if (tpThisMs++ > tpMs) {
-
-                // but sleep if we're moving too fast...
-                while (currentMs == System.currentTimeMillis()) {
-                    Thread.sleep(0, 50000);
-                }
-
-                currentMs = System.currentTimeMillis();
-                tpThisMs = 0;
-            }
-
             // Put a request to delete a user into the queue.
             TimeTrackingCallback theCallback = new TimeTrackingCallback(shc, CREATE_CAMPAIGN);
             mainClient.callProcedure(theCallback, "campaigns.INSERT", i, r.nextInt(budget));
@@ -225,6 +214,19 @@ public class SimulateOverspends {
             for (int j = 0; j < adCount; j++) {
                 theCallback = new TimeTrackingCallback(shc, CREATE_CAMPAIGN_ADS);
                 mainClient.callProcedure(theCallback, "campaign_ads_object.INSERT", i, j);
+
+                if (tpThisMs++ > tpMs) {
+
+                    // but sleep if we're moving too fast...
+                    while (currentMs == System.currentTimeMillis()) {
+                        Thread.sleep(0, 50000);
+                    }
+
+                    currentMs = System.currentTimeMillis();
+                    tpThisMs = 0;
+                }
+
+            
             }
 
             if (i % 100000 == 1) {
